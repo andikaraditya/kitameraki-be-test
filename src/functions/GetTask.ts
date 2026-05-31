@@ -1,12 +1,14 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions"
 import { getContainer } from "../db"
 import { validateTaskIdAndOrg } from "../validation"
-import { badRequest, serverError, logRequest } from "../response"
+import { ok, badRequest, serverError, logRequest } from "../response"
 
 export async function GetTask(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
+  if (request.method === "OPTIONS") return ok()
+
   logRequest(context, request)
 
   try {
@@ -19,14 +21,14 @@ export async function GetTask(
     const container = getContainer()
     const { resource } = await container.item(taskId, organizationId).read()
 
-    return { jsonBody: resource, status: 200 }
+    return ok(resource)
   } catch (error) {
     return serverError(error, context)
   }
 }
 
 app.http("GetTask", {
-  methods: ["GET"],
+  methods: ["GET", "OPTIONS"],
   authLevel: "anonymous",
   handler: GetTask,
 })

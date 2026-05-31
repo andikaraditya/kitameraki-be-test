@@ -1,12 +1,14 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions"
 import { getContainer } from "../db"
 import { validateTaskBody } from "../validation"
-import { badRequest, serverError } from "../response"
+import { ok, badRequest, serverError } from "../response"
 
 export async function InsertTask(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
+  if (request.method === "OPTIONS") return ok()
+
   try {
     const body = (await request.json()) as Record<string, unknown>
     const errors = validateTaskBody(body)
@@ -15,14 +17,14 @@ export async function InsertTask(
     const container = getContainer()
     const { resource } = await container.items.create(body)
 
-    return { jsonBody: resource, status: 200 }
+    return ok(resource)
   } catch (error) {
     return serverError(error, context)
   }
 }
 
 app.http("InsertTask", {
-  methods: ["POST"],
+  methods: ["POST", "OPTIONS"],
   authLevel: "anonymous",
   handler: InsertTask,
 })

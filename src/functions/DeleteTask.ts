@@ -1,12 +1,14 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions"
 import { getContainer } from "../db"
 import { validateTaskIdAndOrg } from "../validation"
-import { badRequest, serverError, logRequest } from "../response"
+import { ok, badRequest, serverError, logRequest } from "../response"
 
 export async function DeleteTask(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
+  if (request.method === "OPTIONS") return ok()
+
   logRequest(context, request)
 
   try {
@@ -19,14 +21,14 @@ export async function DeleteTask(
     const container = getContainer()
     await container.item(taskId, organizationId).delete()
 
-    return { status: 200 }
+    return ok()
   } catch (error) {
     return serverError(error, context)
   }
 }
 
 app.http("DeleteTask", {
-  methods: ["DELETE"],
+  methods: ["DELETE", "OPTIONS"],
   authLevel: "anonymous",
   handler: DeleteTask,
 })

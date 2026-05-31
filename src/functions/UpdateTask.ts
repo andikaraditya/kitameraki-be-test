@@ -1,12 +1,14 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions"
 import { getContainer } from "../db"
 import { validateTaskBody, validateTaskIdAndOrg } from "../validation"
-import { badRequest, serverError } from "../response"
+import { ok, badRequest, serverError } from "../response"
 
 export async function UpdateTask(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
+  if (request.method === "OPTIONS") return ok()
+
   try {
     const body = (await request.json()) as Record<string, unknown>
     const taskId = request.query.get("id")
@@ -24,14 +26,14 @@ export async function UpdateTask(
     const container = getContainer()
     const { resource } = await container.item(taskId, organizationId).patch(patchOperations)
 
-    return { jsonBody: resource, status: 200 }
+    return ok(resource)
   } catch (error) {
     return serverError(error, context)
   }
 }
 
 app.http("UpdateTask", {
-  methods: ["PATCH"],
+  methods: ["PATCH", "OPTIONS"],
   authLevel: "anonymous",
   handler: UpdateTask,
 })

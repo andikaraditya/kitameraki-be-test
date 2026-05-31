@@ -1,12 +1,14 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions"
 import { getContainer } from "../db"
 import { validateUUID } from "../validation"
-import { badRequest, serverError, logRequest } from "../response"
+import { ok, badRequest, serverError, logRequest } from "../response"
 
 export async function BulkDeleteTasks(
   request: HttpRequest,
   context: InvocationContext,
 ): Promise<HttpResponseInit> {
+  if (request.method === "OPTIONS") return ok()
+
   logRequest(context, request)
 
   try {
@@ -29,14 +31,14 @@ export async function BulkDeleteTasks(
     const failed = results.filter((r) => r.status === "rejected").length
     context.log(`Deleted ${results.length - failed} tasks, ${failed} failures`)
 
-    return { status: 200 }
+    return ok()
   } catch (error) {
     return serverError(error, context)
   }
 }
 
 app.http("BulkDeleteTasks", {
-  methods: ["DELETE"],
+  methods: ["DELETE", "OPTIONS"],
   authLevel: "anonymous",
   handler: BulkDeleteTasks,
 })
