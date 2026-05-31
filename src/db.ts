@@ -13,3 +13,7 @@ export function getCosmosClient(): CosmosClient {
 export function getContainer() {
   return getCosmosClient().database(config.databaseName).container(config.containerName)
 }
+
+export function getSettingsContainer() {
+  return getCosmosClient().database(config.databaseName).container(config.settingsContainerName)
+}

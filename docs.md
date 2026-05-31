@@ -200,6 +200,119 @@ DELETE /api/BulkDeleteTasks?organizationId=<uuid>
 
 ---
 
+---
+
+## Settings Endpoints
+
+### Setting Object
+
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `id` | `string` | auto | Derived from `organizationId:name` |
+| `organizationId` | `string` (UUID) | ✅ | Valid UUID v4 |
+| `name` | `string` | ✅ | Non-empty, max 100 characters |
+| `config` | `object` | ✅ | Any JSON object |
+
+---
+
+### Upsert Setting
+
+Creates or replaces a setting. Uses the `organizationId` and `name` to determine the document ID — calling this twice with the same values updates the existing document.
+
+```
+PUT /api/UpsertSetting
+```
+
+**Request body** (JSON):
+
+```json
+{
+  "organizationId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "name": "form_config",
+  "config": {
+    "fields": ["name", "email"],
+    "theme": "dark"
+  }
+}
+```
+
+**Responses:**
+| Status | Body |
+|---|---|
+| `200` | The upserted setting object |
+| `400` | `{ "error": "Validation failed", "details": [...] }` |
+| `500` | `{ "error": "Internal server error" }` |
+
+---
+
+### Get Setting
+
+Retrieves a single setting by organization and name.
+
+```
+GET /api/GetSetting?organizationId=<uuid>&name=<name>
+```
+
+**Query parameters:**
+| Param | Type | Required |
+|---|---|---|
+| `organizationId` | UUID | ✅ |
+| `name` | string | ✅ |
+
+**Responses:**
+| Status | Body |
+|---|---|
+| `200` | The setting object |
+| `400` | `{ "error": "Validation failed", "details": [...] }` |
+| `500` | `{ "error": "Internal server error" }` |
+
+---
+
+### List Settings
+
+Retrieves all settings for an organization.
+
+```
+GET /api/ListSettings?organizationId=<uuid>
+```
+
+**Query parameters:**
+| Param | Type | Required |
+|---|---|---|
+| `organizationId` | UUID | ✅ |
+
+**Responses:**
+| Status | Body |
+|---|---|
+| `200` | `[ setting, setting, ... ]` — array of setting objects |
+| `400` | `{ "error": "Validation failed", "details": [...] }` |
+| `500` | `{ "error": "Internal server error" }` |
+
+---
+
+### Delete Setting
+
+Deletes a setting by organization and name.
+
+```
+DELETE /api/DeleteSetting?organizationId=<uuid>&name=<name>
+```
+
+**Query parameters:**
+| Param | Type | Required |
+|---|---|---|
+| `organizationId` | UUID | ✅ |
+| `name` | string | ✅ |
+
+**Responses:**
+| Status | Body |
+|---|---|
+| `200` | (empty body) |
+| `400` | `{ "error": "Validation failed", "details": [...] }` |
+| `500` | `{ "error": "Internal server error" }` |
+
+---
+
 ## Error Response Format
 
 **400 — Validation error:**
@@ -248,4 +361,21 @@ curl -s -X DELETE "http://localhost:7071/api/DeleteTask?id=3b241e8b-0c0a-4f9a-8c
 curl -s -X DELETE "http://localhost:7071/api/BulkDeleteTasks?organizationId=a1b2c3d4-e5f6-7890-abcd-ef1234567890" \
   -H 'content-type: application/json' \
   -d '["3b241e8b-0c0a-4f9a-8c3e-9a6f0a1b2c3d"]'
+
+echo ""
+
+# Settings
+# Upsert setting
+curl -s -X PUT http://localhost:7071/api/UpsertSetting \
+  -H 'content-type: application/json' \
+  -d '{"organizationId":"a1b2c3d4-e5f6-7890-abcd-ef1234567890","name":"form_config","config":{"theme":"dark"}}'
+
+# Get setting
+curl -s "http://localhost:7071/api/GetSetting?organizationId=a1b2c3d4-e5f6-7890-abcd-ef1234567890&name=form_config"
+
+# List settings
+curl -s "http://localhost:7071/api/ListSettings?organizationId=a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+# Delete setting
+curl -s -X DELETE "http://localhost:7071/api/DeleteSetting?organizationId=a1b2c3d4-e5f6-7890-abcd-ef1234567890&name=form_config"
 ```
