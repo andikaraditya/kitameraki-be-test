@@ -3,6 +3,15 @@ import { getContainer } from "../db"
 import { validateUUID, validateEnum, validateMaxLength, ValidationError } from "../validation"
 import { ok, badRequest, serverError, logRequest } from "../response"
 
+function parsePositiveInt(value: string | null, field: string, defaultVal: number): { value: number; error: ValidationError | null } {
+  if (!value) return { value: defaultVal, error: null }
+  const parsed = parseInt(value, 10)
+  if (isNaN(parsed) || parsed < 0) {
+    return { value: defaultVal, error: { field, message: `${field} must be a non-negative integer` } }
+  }
+  return { value: parsed, error: null }
+}
+
 export async function GetTasks(
   request: HttpRequest,
   context: InvocationContext,
@@ -18,19 +27,26 @@ export async function GetTasks(
     const title = request.query.get("title")
     const search = request.query.get("search")
 
+    const { value: limit, error: limitError } = parsePositiveInt(request.query.get("limit"), "limit", 10)
+    const { value: offset, error: offsetError } = parsePositiveInt(request.query.get("offset"), "offset", 0)
+
     const errors: ValidationError[] = [
       validateUUID(organizationId, "organizationId"),
       validateEnum(status, "status", ["todo", "in-progress", "completed"]),
       validateEnum(priority, "priority", ["low", "medium", "high"]),
       validateMaxLength(title, "title", 100),
       validateMaxLength(search, "search", 100),
+      limitError,
+      offsetError,
     ].filter(Boolean)
 
     if (errors.length) return badRequest(errors)
 
     const conditions = ["c.organizationId = @orgId"]
-    const parameters: { name: string; value: string }[] = [
+    const parameters: { name: string; value: string | number }[] = [
       { name: "@orgId", value: organizationId },
+      { name: "@limit", value: limit },
+      { name: "@offset", value: offset },
     ]
 
     if (status) {
@@ -52,10 +68,13 @@ export async function GetTasks(
 
     const container = getContainer()
     const { resources } = await container.items
-      .query({ query: `SELECT * FROM c WHERE ${conditions.join(" AND ")}`, parameters })
+      .query({
+        query: `SELECT * FROM c WHERE ${conditions.join(" AND ")} ORDER BY c._ts OFFSET @offset LIMIT @limit`,
+        parameters,
+      })
       .fetchNext()
 
-    return ok(resources)
+    return ok({ data: resources, limit, offset })
   } catch (error) {
     return serverError(error, context)
   }

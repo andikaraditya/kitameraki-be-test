@@ -82,7 +82,7 @@ GET /api/GetTask?id=<uuid>&organizationId=<uuid>
 Retrieves all tasks for an organization with optional filtering.
 
 ```
-GET /api/GetTasks?organizationId=<uuid>&status=<status>&priority=<priority>&title=<text>&search=<text>
+GET /api/GetTasks?organizationId=<uuid>&status=<status>&priority=<priority>&title=<text>&search=<text>&limit=10&offset=0
 ```
 
 **Query parameters:**
@@ -93,11 +93,22 @@ GET /api/GetTasks?organizationId=<uuid>&status=<status>&priority=<priority>&titl
 | `priority` | enum | ❌ | Filter by priority: `low`, `medium`, `high` |
 | `title` | string | ❌ | Filter by title (case-insensitive contains) |
 | `search` | string | ❌ | Search title and description (case-insensitive contains) |
+| `limit` | integer | ❌ | Max items per page (default: `10`) |
+| `offset` | integer | ❌ | Number of items to skip (default: `0`) |
+
+**Response (200):**
+```json
+{
+  "data": [ task, task, ... ],
+  "limit": 10,
+  "offset": 0
+}
+```
 
 **Responses:**
 | Status | Body |
 |---|---|
-| `200` | `[ task, task, ... ]` — array of task objects (empty array if none) |
+| `200` | `{ data: [...], limit, offset }` — paginated task array |
 | `400` | `{ "error": "Validation failed", "details": [...] }` |
 | `500` | `{ "error": "Internal server error" }` |
 
