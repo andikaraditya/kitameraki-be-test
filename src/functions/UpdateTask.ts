@@ -1,5 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions"
-import { getContainer, validateTaskBody, validateTaskIdAndOrg } from "../validation"
+import { getContainer } from "../db"
+import { validateTaskBody, validateTaskIdAndOrg } from "../validation"
 import { badRequest, serverError } from "../response"
 
 export async function UpdateTask(

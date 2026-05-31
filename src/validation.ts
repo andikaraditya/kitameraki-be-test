@@ -1,6 +1,3 @@
-import { getCosmosClient } from "./config"
-import { config } from "./config"
-
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export interface ValidationError {
@@ -74,8 +71,4 @@ export function validateTaskBody(body: Record<string, unknown>): ValidationError
     validateEnum(body.status, "status", ["todo", "in-progress", "completed"]),
     validateTags(body.tags),
   ].filter(Boolean) as ValidationError[]
-}
-
-export function getContainer() {
-  return getCosmosClient().database(config.databaseName).container(config.containerName)
 }

@@ -1,5 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions"
-import { getContainer, validateUUID } from "../validation"
+import { getContainer } from "../db"
+import { validateUUID } from "../validation"
 import { badRequest, serverError, logRequest } from "../response"
 
 export async function GetTasks(

@@ -1,5 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions"
-import { getContainer, validateTaskIdAndOrg } from "../validation"
+import { getContainer } from "../db"
+import { validateTaskIdAndOrg } from "../validation"
 import { badRequest, serverError, logRequest } from "../response"
 
 export async function DeleteTask(
