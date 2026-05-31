@@ -1,21 +1,35 @@
-import { CosmosClient } from "@azure/cosmos";
-import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
+import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions"
+import { getContainer } from "../db"
+import { validateUUID } from "../validation"
+import { badRequest, serverError, logRequest } from "../response"
 
-export async function GetTasks(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    context.log(`Http function processed request for url "${request.url}"`);
-    const organizationId = request.query.get('organizationId');
+export async function GetTasks(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  logRequest(context, request)
 
-    const client = new CosmosClient("this is a connection string");
-    const task = await client.database("TaskApp")
-        .container("Tasks")
-        .items.query(`SELECT * FROM c WHERE c.organizationId = '${organizationId}'`)
-        .fetchNext();
+  try {
+    const organizationId = request.query.get("organizationId")
+    const errors = [validateUUID(organizationId, "organizationId")].filter(Boolean)
+    if (errors.length) return badRequest(errors)
 
-    return { jsonBody: task.resources, status: 200 };
-};
+    const container = getContainer()
+    const { resources } = await container.items
+      .query({
+        query: "SELECT * FROM c WHERE c.organizationId = @orgId",
+        parameters: [{ name: "@orgId", value: organizationId }],
+      })
+      .fetchNext()
 
-app.http('GetTasks', {
-    methods: ['GET'],
-    authLevel: 'anonymous',
-    handler: GetTasks
-});
+    return { jsonBody: resources, status: 200 }
+  } catch (error) {
+    return serverError(error, context)
+  }
+}
+
+app.http("GetTasks", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  handler: GetTasks,
+})
