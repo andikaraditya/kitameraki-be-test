@@ -79,16 +79,20 @@ GET /api/GetTask?id=<uuid>&organizationId=<uuid>
 
 ### List Tasks
 
-Retrieves all tasks for an organization.
+Retrieves all tasks for an organization with optional filtering.
 
 ```
-GET /api/GetTasks?organizationId=<uuid>
+GET /api/GetTasks?organizationId=<uuid>&status=<status>&priority=<priority>&title=<text>&search=<text>
 ```
 
 **Query parameters:**
-| Param | Type | Required |
-|---|---|---|
-| `organizationId` | UUID | ✅ |
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `organizationId` | UUID | ✅ | |
+| `status` | enum | ❌ | Filter by status: `todo`, `in-progress`, `completed` |
+| `priority` | enum | ❌ | Filter by priority: `low`, `medium`, `high` |
+| `title` | string | ❌ | Filter by title (case-insensitive contains) |
+| `search` | string | ❌ | Search title and description (case-insensitive contains) |
 
 **Responses:**
 | Status | Body |

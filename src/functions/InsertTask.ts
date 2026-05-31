@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions"
 import { getContainer } from "../db"
 import { validateTaskBody } from "../validation"
-import { ok, badRequest, serverError } from "../response"
+import { ok, badRequest, serverError, logRequest } from "../response"
 
 export async function InsertTask(
   request: HttpRequest,
@@ -10,6 +10,7 @@ export async function InsertTask(
   if (request.method === "OPTIONS") return ok()
 
   try {
+    logRequest(context, request)
     const body = (await request.json()) as Record<string, unknown>
     const errors = validateTaskBody(body)
     if (errors.length) return badRequest(errors)
