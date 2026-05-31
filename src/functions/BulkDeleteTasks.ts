@@ -1,24 +1,41 @@
-import { CosmosClient } from "@azure/cosmos";
-import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
+import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions"
+import { getContainer, validateUUID } from "../validation"
+import { badRequest, serverError, logRequest } from "../response"
 
-export async function BulkDeleteTasks(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    context.log(`Http function processed request for url "${request.url}"`);
-    const body = await request.json() as string[];
-    const organizationId = request.query.get('organizationId');
+export async function BulkDeleteTasks(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  logRequest(context, request)
 
-    const client = new CosmosClient("this is a connection string");
-    body.forEach(async element => {
-        await client.database("TaskApp")
-        .container("Tasks")
-        .item(element, organizationId)
-        .delete();
-    });
+  try {
+    const body = (await request.json()) as string[]
+    const organizationId = request.query.get("organizationId")
 
-    return { status: 200 };
-};
+    const errors = [validateUUID(organizationId, "organizationId")].filter(Boolean)
 
-app.http('BulkDeleteTasks', {
-    methods: ['DELETE'],
-    authLevel: 'anonymous',
-    handler: BulkDeleteTasks
-});
+    if (!Array.isArray(body) || body.length === 0) {
+      errors.push({ field: "body", message: "request body must be a non-empty array of task IDs" })
+    }
+
+    if (errors.length) return badRequest(errors)
+
+    const container = getContainer()
+    const results = await Promise.allSettled(
+      body.map((id) => container.item(id, organizationId).delete()),
+    )
+
+    const failed = results.filter((r) => r.status === "rejected").length
+    context.log(`Deleted ${results.length - failed} tasks, ${failed} failures`)
+
+    return { status: 200 }
+  } catch (error) {
+    return serverError(error, context)
+  }
+}
+
+app.http("BulkDeleteTasks", {
+  methods: ["DELETE"],
+  authLevel: "anonymous",
+  handler: BulkDeleteTasks,
+})

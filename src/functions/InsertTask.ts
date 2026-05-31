@@ -1,19 +1,27 @@
-import { CosmosClient } from "@azure/cosmos";
-import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
+import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions"
+import { getContainer, validateTaskBody } from "../validation"
+import { badRequest, serverError } from "../response"
 
-export async function InsertTask(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    const body = await request.json();
+export async function InsertTask(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  try {
+    const body = (await request.json()) as Record<string, unknown>
+    const errors = validateTaskBody(body)
+    if (errors.length) return badRequest(errors)
 
-    const client = new CosmosClient("this is a connection string");
-    const createdTask = await client.database("TaskApp")
-        .container("Tasks")
-        .items.create(body);
+    const container = getContainer()
+    const { resource } = await container.items.create(body)
 
-    return { jsonBody: createdTask.resource, status: 200 };
-};
+    return { jsonBody: resource, status: 200 }
+  } catch (error) {
+    return serverError(error, context)
+  }
+}
 
-app.http('InsertTask', {
-    methods: ['POST'],
-    authLevel: 'anonymous',
-    handler: InsertTask
-});
+app.http("InsertTask", {
+  methods: ["POST"],
+  authLevel: "anonymous",
+  handler: InsertTask,
+})

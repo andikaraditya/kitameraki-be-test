@@ -1,33 +1,36 @@
-import { CosmosClient } from "@azure/cosmos";
-import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
+import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions"
+import { getContainer, validateTaskBody, validateTaskIdAndOrg } from "../validation"
+import { badRequest, serverError } from "../response"
 
+export async function UpdateTask(
+  request: HttpRequest,
+  context: InvocationContext,
+): Promise<HttpResponseInit> {
+  try {
+    const body = (await request.json()) as Record<string, unknown>
+    const taskId = request.query.get("id")
+    const organizationId = request.query.get("organizationId")
 
-export async function UpdateTask(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    const body = await request.json() as object;
-    const taskId = request.query.get('id');
-    const organizationId = request.query.get('organizationId');
+    const errors = [...validateTaskIdAndOrg(taskId, organizationId), ...validateTaskBody(body)]
+    if (errors.length) return badRequest(errors)
 
-    let patchRequests = [];
+    const patchOperations = Object.entries(body).map(([key, value]) => ({
+      op: "replace" as const,
+      path: `/${key}`,
+      value,
+    }))
 
-    for (let key in body) {
-        patchRequests.push({
-            "op": "replace",
-            "path": `/${key}`,
-            "value": body[key]
-        });
-    }
+    const container = getContainer()
+    const { resource } = await container.item(taskId, organizationId).patch(patchOperations)
 
-    const client = new CosmosClient("this is a connection string");
-    const createdTask = await client.database("TaskApp")
-        .container("Tasks")
-        .item(taskId, organizationId)
-        .patch(patchRequests);
+    return { jsonBody: resource, status: 200 }
+  } catch (error) {
+    return serverError(error, context)
+  }
+}
 
-    return { jsonBody: createdTask.resource, status: 200 };
-};
-
-app.http('UpdateTask', {
-    methods: ['POST'],
-    authLevel: 'anonymous',
-    handler: UpdateTask
-});
+app.http("UpdateTask", {
+  methods: ["PATCH"],
+  authLevel: "anonymous",
+  handler: UpdateTask,
+})
