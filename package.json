@@ -8,6 +8,7 @@
     "clean": "rimraf dist",
     "prestart": "npm run clean && npm run build",
     "start": "func start",
+    "db:setup": "npm run build && node dist/src/setup.js",
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
