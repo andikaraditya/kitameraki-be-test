@@ -26,9 +26,14 @@ export async function GetTasks(
     const priority = request.query.get("priority")
     const title = request.query.get("title")
     const search = request.query.get("search")
+    const sortParam = (request.query.get("sort") || "dueDate:desc").split(":")
+    const sortBy = sortParam[0] || "dueDate"
+    const sortOrder = (sortParam[1] || "desc") as string
 
     const { value: limit, error: limitError } = parsePositiveInt(request.query.get("limit"), "limit", 10)
     const { value: offset, error: offsetError } = parsePositiveInt(request.query.get("offset"), "offset", 0)
+
+    const sortableFields = ["dueDate", "title", "status", "priority"]
 
     const errors: ValidationError[] = [
       validateUUID(organizationId, "organizationId"),
@@ -36,6 +41,8 @@ export async function GetTasks(
       validateEnum(priority, "priority", ["low", "medium", "high"]),
       validateMaxLength(title, "title", 100),
       validateMaxLength(search, "search", 100),
+      validateEnum(sortBy, "sort", sortableFields),
+      validateEnum(sortOrder, "sort", ["asc", "desc"]),
       limitError,
       offsetError,
     ].filter(Boolean)
@@ -69,7 +76,7 @@ export async function GetTasks(
     const container = getContainer()
     const { resources } = await container.items
       .query({
-        query: `SELECT * FROM c WHERE ${conditions.join(" AND ")} ORDER BY c._ts OFFSET @offset LIMIT @limit`,
+        query: `SELECT * FROM c WHERE ${conditions.join(" AND ")} ORDER BY c.${sortBy} ${sortOrder} OFFSET @offset LIMIT @limit`,
         parameters,
       })
       .fetchNext()

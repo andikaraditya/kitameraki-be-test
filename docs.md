@@ -82,7 +82,7 @@ GET /api/GetTask?id=<uuid>&organizationId=<uuid>
 Retrieves all tasks for an organization with optional filtering.
 
 ```
-GET /api/GetTasks?organizationId=<uuid>&status=<status>&priority=<priority>&title=<text>&search=<text>&limit=10&offset=0
+GET /api/GetTasks?organizationId=<uuid>&status=<status>&priority=<priority>&title=<text>&search=<text>&sort=dueDate:desc&limit=10&offset=0
 ```
 
 **Query parameters:**
@@ -93,6 +93,7 @@ GET /api/GetTasks?organizationId=<uuid>&status=<status>&priority=<priority>&titl
 | `priority` | enum | ❌ | Filter by priority: `low`, `medium`, `high` |
 | `title` | string | ❌ | Filter by title (case-insensitive contains) |
 | `search` | string | ❌ | Search title and description (case-insensitive contains) |
+| `sort` | string | ❌ | Sort field and direction: `field:direction` e.g. `dueDate:desc`, `title:asc` (default: `dueDate:desc`) |
 | `limit` | integer | ❌ | Max items per page (default: `10`) |
 | `offset` | integer | ❌ | Number of items to skip (default: `0`) |
 
